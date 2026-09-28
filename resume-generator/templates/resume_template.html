@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>{{ name }} - Resume</title>
+
+    <style>
+
+        /* =====================================================
+           PAGE
+        ===================================================== */
+
+        @page {
+            size: A4;
+            margin: 32px 42px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+
+            font-family: Arial, Helvetica, sans-serif;
+
+            color: #222;
+
+            font-size: 10.5px;
+
+            line-height: 1.45;
+
+            background: white;
+        }
+
+        .resume {
+            width: 100%;
+        }
+
+
+        /* =====================================================
+           HEADER
+        ===================================================== */
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .name {
+            margin: 0;
+
+            font-size: 25px;
+
+            font-weight: 700;
+
+            color: #111;
+        }
+
+        .job-role {
+            margin-top: 3px;
+            margin-bottom: 6px;
+
+            font-size: 12px;
+
+            font-weight: 600;
+
+            color: #444;
+        }
+
+        .contact {
+            font-size: 9.5px;
+
+            color: #444;
+
+            line-height: 1.5;
+        }
+
+        .contact a {
+            color: #333;
+
+            text-decoration: none;
+        }
+
+        .separator {
+            margin: 0 5px;
+
+            color: #777;
+        }
+
+
+        /* =====================================================
+           SECTIONS
+        ===================================================== */
+
+        .section {
+            margin-top: 11px;
+
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            margin: 0 0 6px 0;
+
+            padding-bottom: 3px;
+
+            border-bottom: 1px solid #222;
+
+            font-size: 11.5px;
+
+            font-weight: 700;
+
+            text-transform: uppercase;
+
+            letter-spacing: 0.7px;
+
+            color: #111;
+        }
+
+
+        /* =====================================================
+           SUMMARY
+        ===================================================== */
+
+        .summary {
+            margin: 0;
+
+            text-align: justify;
+        }
+
+
+        /* =====================================================
+           EDUCATION
+        ===================================================== */
+
+        .education-item {
+            margin-bottom: 5px;
+
+            page-break-inside: avoid;
+        }
+
+
+        /* =====================================================
+           EXPERIENCE
+        ===================================================== */
+
+        .experience-item {
+            margin-bottom: 8px;
+
+            page-break-inside: avoid;
+        }
+
+        .experience-header {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: baseline;
+
+            gap: 10px;
+        }
+
+        .experience-role {
+            font-weight: 700;
+
+            color: #111;
+        }
+
+        .experience-company {
+            font-weight: 600;
+
+            color: #333;
+        }
+
+        .experience-dates {
+            font-size: 9.5px;
+
+            color: #555;
+
+            white-space: nowrap;
+        }
+
+        .experience-bullets {
+            margin: 3px 0 0 16px;
+
+            padding: 0;
+        }
+
+        .experience-bullets li {
+            margin-bottom: 2px;
+        }
+
+
+        /* =====================================================
+           PROJECTS
+        ===================================================== */
+
+        .project-item {
+            margin-bottom: 8px;
+
+            page-break-inside: avoid;
+        }
+
+        .project-header {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: baseline;
+
+            gap: 10px;
+        }
+
+        .project-name {
+            font-weight: 700;
+
+            color: #111;
+        }
+
+        .project-links {
+            font-size: 9px;
+
+            white-space: nowrap;
+        }
+
+        .project-links a {
+            color: #333;
+
+            text-decoration: none;
+
+            font-weight: 600;
+        }
+
+        .project-technologies {
+            margin-top: 2px;
+
+            font-size: 9.5px;
+
+            font-style: italic;
+
+            color: #555;
+        }
+
+        .project-bullets {
+            margin: 3px 0 0 16px;
+
+            padding: 0;
+        }
+
+        .project-bullets li {
+            margin-bottom: 2px;
+        }
+
+
+        /* =====================================================
+           SKILLS
+        ===================================================== */
+
+        .skill-row {
+            margin-bottom: 3px;
+        }
+
+        .skill-category {
+            font-weight: 700;
+
+            color: #222;
+        }
+
+
+        /* =====================================================
+           ACHIEVEMENTS
+        ===================================================== */
+
+        .achievements {
+            margin: 0;
+
+            padding-left: 16px;
+        }
+
+        .achievements li {
+            margin-bottom: 3px;
+        }
+
+
+        /* =====================================================
+           PRINT
+        ===================================================== */
+
+        .section,
+        .experience-item,
+        .project-item,
+        .education-item {
+            page-break-inside: avoid;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="resume">
+
+
+    <!-- =====================================================
+         HEADER
+    ===================================================== -->
+
+    <div class="header">
+
+        <h1 class="name">
+            {{ name }}
+        </h1>
+
+
+        {% if job_role %}
+
+        <div class="job-role">
+            {{ job_role }}
+        </div>
+
+        {% endif %}
+
+
+        <div class="contact">
+
+            {% if email %}
+
+            <a href="mailto:{{ email }}">
+                {{ email }}
+            </a>
+
+            {% endif %}
+
+
+            {% if phone %}
+
+            <span class="separator">|</span>
+
+            <span>
+                {{ phone }}
+            </span>
+
+            {% endif %}
+
+
+            {% if linkedin %}
+
+            <span class="separator">|</span>
+
+            <a
+                href="{{ linkedin if linkedin.startswith('http') else 'https://' ~ linkedin }}"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                LinkedIn
+            </a>
+
+            {% endif %}
+
+
+            {% if github %}
+
+            <span class="separator">|</span>
+
+            <a
+                href="{{ github if github.startswith('http') else 'https://' ~ github }}"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                GitHub
+            </a>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         PROFESSIONAL SUMMARY
+    ===================================================== -->
+
+    {% if summary %}
+
+    <div class="section">
+
+        <div class="section-title">
+            Professional Summary
+        </div>
+
+        <p class="summary">
+            {{ summary }}
+        </p>
+
+    </div>
+
+    {% endif %}
+
+
+
+    <!-- =====================================================
+         EDUCATION
+    ===================================================== -->
+
+    {% if education %}
+
+    <div class="section">
+
+        <div class="section-title">
+            Education
+        </div>
+
+
+        {% for item in education %}
+
+        <div class="education-item">
+            {{ item }}
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+
+
+    <!-- =====================================================
+         EXPERIENCE
+    ===================================================== -->
+
+    {% if experience %}
+
+    <div class="section">
+
+        <div class="section-title">
+            Experience
+        </div>
+
+
+        {% for item in experience %}
+
+        <div class="experience-item">
+
+            <div class="experience-header">
+
+                <div>
+
+                    {% if item.role %}
+
+                    <span class="experience-role">
+                        {{ item.role }}
+                    </span>
+
+                    {% endif %}
+
+
+                    {% if item.company %}
+
+                    {% if item.role %}
+                    <span> | </span>
+                    {% endif %}
+
+                    <span class="experience-company">
+                        {{ item.company }}
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                {% if item.dates %}
+
+                <span class="experience-dates">
+                    {{ item.dates }}
+                </span>
+
+                {% endif %}
+
+            </div>
+
+
+            {% if item.bullets %}
+
+            <ul class="experience-bullets">
+
+                {% for bullet in item.bullets %}
+
+                <li>
+                    {{ bullet }}
+                </li>
+
+                {% endfor %}
+
+            </ul>
+
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+
+
+    <!-- =====================================================
+         PROJECTS
+    ===================================================== -->
+
+    {% if projects %}
+
+    <div class="section">
+
+        <div class="section-title">
+            Projects
+        </div>
+
+
+        {% for project in projects %}
+
+        <div class="project-item">
+
+            <div class="project-header">
+
+                <span class="project-name">
+                    {{ project.name }}
+                </span>
+
+
+                <span class="project-links">
+
+                    {% if project.github %}
+
+                    <a
+                        href="{{ project.github if project.github.startswith('http') else 'https://' ~ project.github }}"
+                        target="_blank"
+                    >
+                        GitHub
+                    </a>
+
+                    {% endif %}
+
+
+                    {% if project.github and project.demo %}
+
+                    <span class="separator">|</span>
+
+                    {% endif %}
+
+
+                    {% if project.demo %}
+
+                    <a
+                        href="{{ project.demo if project.demo.startswith('http') else 'https://' ~ project.demo }}"
+                        target="_blank"
+                    >
+                        Live Demo
+                    </a>
+
+                    {% endif %}
+
+                </span>
+
+            </div>
+
+
+            {% if project.technologies %}
+
+            <div class="project-technologies">
+                {{ project.technologies }}
+            </div>
+
+            {% endif %}
+
+
+            {% if project.bullets %}
+
+            <ul class="project-bullets">
+
+                {% for bullet in project.bullets %}
+
+                <li>
+                    {{ bullet }}
+                </li>
+
+                {% endfor %}
+
+            </ul>
+
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+
+
+    <!-- =====================================================
+         TECHNICAL SKILLS
+    ===================================================== -->
+
+    {% if skills %}
+
+    <div class="section">
+
+        <div class="section-title">
+            Technical Skills
+        </div>
+
+
+        {% for category, skill_list in skills.items() %}
+
+            {% if skill_list %}
+
+            <div class="skill-row">
+
+                <span class="skill-category">
+                    {{ category }}:
+                </span>
+
+                {{ skill_list | join(", ") }}
+
+            </div>
+
+            {% endif %}
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+
+
+    <!-- =====================================================
+         ACHIEVEMENTS & CERTIFICATIONS
+    ===================================================== -->
+
+    {% if achievements %}
+
+    <div class="section">
+
+        <div class="section-title">
+            Achievements & Certifications
+        </div>
+
+
+        <ul class="achievements">
+
+            {% for achievement in achievements %}
+
+            <li>
+                {{ achievement }}
+            </li>
+
+            {% endfor %}
+
+        </ul>
+
+    </div>
+
+    {% endif %}
+
+
+</div>
+
+</body>
+
+</html>
