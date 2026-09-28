@@ -1,757 +1,215 @@
 # AI Job Intelligence
 
-### Explainable Hybrid Job Recommendation & Resume Tailoring Platform
+An AI-powered job discovery, matching, and resume-tailoring platform that helps candidates find relevant opportunities and understand why each job matches their profile.
 
-AI Job Intelligence is a full-stack AI-powered platform that analyzes job opportunities against a candidate's profile, ranks jobs using an explainable hybrid matching system, identifies skill gaps, and generates job-specific resume improvements.
+## Overview
 
-The project combines **deterministic scoring, semantic similarity, Gemini-based job analysis, PostgreSQL, FastAPI, React, and an AI-powered Resume Generator** into a single end-to-end system.
+AI Job Intelligence combines job aggregation, LLM-based job-description analysis, deterministic candidate-job matching, recommendation ranking, and AI-assisted resume tailoring into a single application.
 
----
+The current system supports:
 
-## 🚀 Overview
+- Fetching jobs from the Adzuna API
+- Normalizing external job data into a common schema
+- Extracting structured information from job descriptions using Gemini
+- Storing jobs and candidate profiles in PostgreSQL
+- Matching jobs against candidate profiles
+- Ranking recommendations using a hybrid scoring model
+- Explaining matches through matched skills and potential gaps
+- Tailoring resume summaries and experience for individual jobs
+- Generating ATS-style skill-alignment analysis
+- Evaluating recommendation quality using Precision@K, Recall@K, and NDCG@K
+- Providing a React-based dashboard for interacting with recommendations
 
-Finding relevant internship and job opportunities can be time-consuming because candidates often need to manually compare job descriptions, required skills, experience requirements, and their own qualifications.
-
-**AI Job Intelligence** automates this analysis by allowing a candidate to maintain a structured profile and receive personalized job recommendations based on:
-
-- Technical skill compatibility
-- Semantic similarity between the candidate profile and job description
-- Experience requirements
-- Location compatibility
-- Company preferences
-- Skill gaps
-
-The platform also provides:
-
-- Explainable match scores
-- Matched and missing skills
-- AI-powered job description parsing
-- AI-powered resume tailoring
-- Standalone AI resume generation
-- Recommendation evaluation using ranking metrics
+> **Current scope:** This repository focuses on job intelligence, recommendation, and resume tailoring. Automated applications, referral discovery, email notifications, and application tracking are not currently implemented.
 
 ---
 
-## ✨ Key Features
+## Architecture
 
-### 1. AI-Powered Job Analysis
+```text
+                    ┌──────────────────────┐
+                    │      React UI        │
+                    │   Dashboard/Profile  │
+                    └──────────┬───────────┘
+                               │
+                               │ REST API
+                               ▼
+                    ┌──────────────────────┐
+                    │       FastAPI        │
+                    │       Backend        │
+                    └──────────┬───────────┘
+                               │
+             ┌─────────────────┼─────────────────┐
+             │                 │                 │
+             ▼                 ▼                 ▼
+      ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
+      │ Job         │   │ Job         │   │ Resume      │
+      │ Ingestion   │   │ Matching    │   │ Tailoring   │
+      └──────┬──────┘   └──────┬──────┘   └──────┬──────┘
+             │                 │                 │
+             ▼                 ▼                 ▼
+        Adzuna API       Matching Engine       Gemini
+             │                 │                 │
+             ▼                 └────────┬────────┘
+      ┌─────────────┐                   │
+      │ JD Parser   │◄──────────────────┘
+      │   Gemini    │
+      └──────┬──────┘
+             │
+             ▼
+      ┌─────────────┐
+      │ PostgreSQL  │
+      └─────────────┘
+```
 
-Job descriptions are analyzed using **Google Gemini** to extract structured information such as:
+---
 
-- Required technical skills
+## Core Workflow
+
+### 1. Job Discovery
+
+Jobs are fetched from Adzuna using configurable search parameters such as:
+
+- Job keywords
+- Location
+- Number of results
+- Country
+
+The raw external response is normalized into the application's internal `Job` schema.
+
+```text
+Adzuna
+  ↓
+Fetch jobs
+  ↓
+Normalize
+  ↓
+Parse JD
+  ↓
+Store in PostgreSQL
+```
+
+### 2. Job Description Intelligence
+
+Gemini analyzes each job description and extracts structured information:
+
+- Role
+- Required skills
 - Preferred skills
 - Experience requirements
 - Education requirements
 
-This converts unstructured job descriptions into structured data that can be used by the recommendation engine.
+The extraction uses structured Pydantic output and explicit prompts designed to avoid inventing requirements.
 
----
+### 3. Candidate-Job Matching
 
-### 2. Explainable Hybrid Job Matching
+Each stored job is compared against a candidate profile.
 
-The recommendation engine combines multiple signals instead of relying only on an LLM-generated score.
+The current hybrid score consists of:
 
-The current hybrid scoring system uses:
-
-| Signal | Weight |
+| Component | Weight |
 |---|---:|
-| Skill Compatibility | 35% |
-| Semantic Similarity | 30% |
-| Experience Compatibility | 20% |
-| Location Compatibility | 10% |
-| Other / Company Signal | 5% |
+| Required skill match | 35% |
+| Text similarity | 30% |
+| Experience compatibility | 20% |
+| Location match | 10% |
+| Preferred company match | 5% |
 
-The final score is calculated programmatically.
+The result includes both the overall score and its individual components.
 
-This makes recommendations more transparent and allows the system to explain **why a job matches a candidate**.
+### 4. Explainable Recommendations
 
----
+For every recommendation, the system can provide:
 
-### 3. Skill Gap Detection
+- Overall match score
+- Skill score
+- Text similarity score
+- Experience score
+- Location score
+- Company score
+- Matched skills
+- Missing skills
+- Reasons for the match
+- Potential gaps
 
-For every recommendation, the platform identifies:
+This allows the candidate to understand why a job was recommended instead of receiving only a black-box score.
 
-- Skills already matched by the candidate
-- Required skills that are missing
-- Additional preferred skills that may improve compatibility
+### 5. Resume Tailoring
 
-This helps candidates understand what they may need to learn or strengthen for a particular opportunity.
-
----
-
-### 4. Semantic Job Matching
-
-The system uses **Gemini Embeddings** to measure semantic similarity between:
-
-- Candidate profile information
-- Job descriptions
-
-This allows the system to capture relevant relationships beyond exact keyword matching.
-
----
-
-### 5. AI Resume Tailoring
-
-Candidates can tailor their resume content for a specific job.
-
-The system:
-
-1. Retrieves the candidate's current profile.
-2. Analyzes the selected job description.
-3. Calculates deterministic skill alignment.
-4. Uses Gemini to rewrite relevant resume sections.
-5. Produces a tailored professional summary and experience content.
-6. Provides tailoring notes.
-
-The system is designed to avoid inventing qualifications or experience that are not present in the candidate profile.
-
----
-
-### 6. AI Resume Generator
-
-The repository also contains a standalone **Streamlit-based AI Resume Generator**.
-
-It supports:
-
-- Personal information
-- Education
-- Skills
-- Experience
-- Projects
-- Achievements and certifications
-- AI-generated professional summary
-- AI-enhanced experience descriptions
-- HTML resume rendering
-- PDF generation
-- Downloadable resume output
-
-The generated resume uses a structured professional template.
-
----
-
-### 7. Candidate Profile Management
-
-The platform allows candidates to maintain structured profile information including:
-
-- Name
-- Education
-- Experience
-- Target roles
-- Preferred locations
-- Skills
-- Graduation year
-- Work type
-- Preferred companies
-
-This profile is used as the basis for personalized recommendations.
-
----
-
-### 8. Recommendation Evaluation
-
-The project includes an evaluation module for measuring ranking quality using:
-
-- Precision@K
-- Recall@K
-- NDCG@K
-
-The evaluation framework is designed to compare recommendation quality using labeled job relevance data.
-
----
-
-## 🏗️ System Architecture
+For a selected job, the candidate profile and job description are passed through the resume-tailoring pipeline.
 
 ```text
-                    ┌─────────────────────┐
-                    │   Candidate Profile │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Job Data / Jobs   │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Job Normalizer    │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Gemini Job Parser │
-                    │ Skills / Experience │
-                    │ Education Analysis  │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-              ┌─────────────────────────────────┐
-              │      Hybrid Matching Engine     │
-              │                                 │
-              │ • Skill Compatibility           │
-              │ • Semantic Similarity           │
-              │ • Experience Compatibility     │
-              │ • Location Compatibility       │
-              │ • Company / Other Signals      │
-              └────────────────┬────────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Ranked Job List   │
-                    └──────────┬──────────┘
-                               │
-                ┌──────────────┼──────────────┐
-                ▼              ▼              ▼
-        ┌────────────┐ ┌─────────────┐ ┌──────────────┐
-        │ Match Score│ │ Skill Gaps  │ │ Job Details  │
-        └────────────┘ └─────────────┘ └──────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Resume Tailoring  │
-                    │      with Gemini    │
-                    └─────────────────────┘
-
-# AI Job Intelligence
-
-### Explainable Hybrid Job Recommendation & Resume Tailoring Platform
-
-AI Job Intelligence is a full-stack AI-powered platform that analyzes job opportunities against a candidate's profile, ranks jobs using an explainable hybrid matching system, identifies skill gaps, and generates job-specific resume improvements.
-
-The project combines **deterministic scoring, semantic similarity, Gemini-based job analysis, PostgreSQL, FastAPI, React, and an AI-powered Resume Generator** into a single end-to-end system.
-
----
-
-## 🚀 Overview
-
-Finding relevant internship and job opportunities can be time-consuming because candidates often need to manually compare job descriptions, required skills, experience requirements, and their own qualifications.
-
-**AI Job Intelligence** automates this analysis by allowing a candidate to maintain a structured profile and receive personalized job recommendations based on:
-
-- Technical skill compatibility
-- Semantic similarity between the candidate profile and job description
-- Experience requirements
-- Location compatibility
-- Company preferences
-- Skill gaps
-
-The platform also provides:
-
-- Explainable match scores
-- Matched and missing skills
-- AI-powered job description parsing
-- AI-powered resume tailoring
-- Standalone AI resume generation
-- Recommendation evaluation using ranking metrics
-
----
-
-## ✨ Key Features
-
-### 1. AI-Powered Job Analysis
-
-Job descriptions are analyzed using **Google Gemini** to extract structured information such as:
-
-- Required technical skills
-- Preferred skills
-- Experience requirements
-- Education requirements
-
-This converts unstructured job descriptions into structured data that can be used by the recommendation engine.
-
----
-
-### 2. Explainable Hybrid Job Matching
-
-The recommendation engine combines multiple signals instead of relying only on an LLM-generated score.
-
-The current hybrid scoring system uses:
-
-| Signal | Weight |
-|---|---:|
-| Skill Compatibility | 35% |
-| Semantic Similarity | 30% |
-| Experience Compatibility | 20% |
-| Location Compatibility | 10% |
-| Other / Company Signal | 5% |
-
-The final score is calculated programmatically.
-
-This makes recommendations more transparent and allows the system to explain **why a job matches a candidate**.
-
----
-
-### 3. Skill Gap Detection
-
-For every recommendation, the platform identifies:
-
-- Skills already matched by the candidate
-- Required skills that are missing
-- Additional preferred skills that may improve compatibility
-
-This helps candidates understand what they may need to learn or strengthen for a particular opportunity.
-
----
-
-### 4. Semantic Job Matching
-
-The system uses **Gemini Embeddings** to measure semantic similarity between:
-
-- Candidate profile information
-- Job descriptions
-
-This allows the system to capture relevant relationships beyond exact keyword matching.
-
----
-
-### 5. AI Resume Tailoring
-
-Candidates can tailor their resume content for a specific job.
-
-The system:
-
-1. Retrieves the candidate's current profile.
-2. Analyzes the selected job description.
-3. Calculates deterministic skill alignment.
-4. Uses Gemini to rewrite relevant resume sections.
-5. Produces a tailored professional summary and experience content.
-6. Provides tailoring notes.
-
-The system is designed to avoid inventing qualifications or experience that are not present in the candidate profile.
-
----
-
-### 6. AI Resume Generator
-
-The repository also contains a standalone **Streamlit-based AI Resume Generator**.
-
-It supports:
-
-- Personal information
-- Education
-- Skills
-- Experience
-- Projects
-- Achievements and certifications
-- AI-generated professional summary
-- AI-enhanced experience descriptions
-- HTML resume rendering
-- PDF generation
-- Downloadable resume output
-
-The generated resume uses a structured professional template.
-
----
-
-### 7. Candidate Profile Management
-
-The platform allows candidates to maintain structured profile information including:
-
-- Name
-- Education
-- Experience
-- Target roles
-- Preferred locations
-- Skills
-- Graduation year
-- Work type
-- Preferred companies
-
-This profile is used as the basis for personalized recommendations.
-
----
-
-### 8. Recommendation Evaluation
-
-The project includes an evaluation module for measuring ranking quality using:
-
-- Precision@K
-- Recall@K
-- NDCG@K
-
-The evaluation framework is designed to compare recommendation quality using labeled job relevance data.
-
----
-
-## 🏗️ System Architecture
-
-```text
-                    ┌─────────────────────┐
-                    │   Candidate Profile │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Job Data / Jobs   │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Job Normalizer    │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Gemini Job Parser │
-                    │ Skills / Experience │
-                    │ Education Analysis  │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-              ┌─────────────────────────────────┐
-              │      Hybrid Matching Engine     │
-              │                                 │
-              │ • Skill Compatibility           │
-              │ • Semantic Similarity           │
-              │ • Experience Compatibility     │
-              │ • Location Compatibility       │
-              │ • Company / Other Signals      │
-              └────────────────┬────────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Ranked Job List   │
-                    └──────────┬──────────┘
-                               │
-                ┌──────────────┼──────────────┐
-                ▼              ▼              ▼
-        ┌────────────┐ ┌─────────────┐ ┌──────────────┐
-        │ Match Score│ │ Skill Gaps  │ │ Job Details  │
-        └────────────┘ └─────────────┘ └──────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Resume Tailoring  │
-                    │      with Gemini    │
-                    └─────────────────────┘
-
-# AI Job Intelligence
-
-### Explainable Hybrid Job Recommendation & Resume Tailoring Platform
-
-AI Job Intelligence is a full-stack AI-powered platform that analyzes job opportunities against a candidate's profile, ranks jobs using an explainable hybrid matching system, identifies skill gaps, and generates job-specific resume improvements.
-
-The project combines **deterministic scoring, semantic similarity, Gemini-based job analysis, PostgreSQL, FastAPI, React, and an AI-powered Resume Generator** into a single end-to-end system.
-
----
-
-## 🚀 Overview
-
-Finding relevant internship and job opportunities can be time-consuming because candidates often need to manually compare job descriptions, required skills, experience requirements, and their own qualifications.
-
-**AI Job Intelligence** automates this analysis by allowing a candidate to maintain a structured profile and receive personalized job recommendations based on:
-
-- Technical skill compatibility
-- Semantic similarity between the candidate profile and job description
-- Experience requirements
-- Location compatibility
-- Company preferences
-- Skill gaps
-
-The platform also provides:
-
-- Explainable match scores
-- Matched and missing skills
-- AI-powered job description parsing
-- AI-powered resume tailoring
-- Standalone AI resume generation
-- Recommendation evaluation using ranking metrics
-
----
-
-## ✨ Key Features
-
-### 1. AI-Powered Job Analysis
-
-Job descriptions are analyzed using **Google Gemini** to extract structured information such as:
-
-- Required technical skills
-- Preferred skills
-- Experience requirements
-- Education requirements
-
-This converts unstructured job descriptions into structured data that can be used by the recommendation engine.
-
----
-
-### 2. Explainable Hybrid Job Matching
-
-The recommendation engine combines multiple signals instead of relying only on an LLM-generated score.
-
-The current hybrid scoring system uses:
-
-| Signal | Weight |
-|---|---:|
-| Skill Compatibility | 35% |
-| Semantic Similarity | 30% |
-| Experience Compatibility | 20% |
-| Location Compatibility | 10% |
-| Other / Company Signal | 5% |
-
-The final score is calculated programmatically.
-
-This makes recommendations more transparent and allows the system to explain **why a job matches a candidate**.
-
----
-
-### 3. Skill Gap Detection
-
-For every recommendation, the platform identifies:
-
-- Skills already matched by the candidate
-- Required skills that are missing
-- Additional preferred skills that may improve compatibility
-
-This helps candidates understand what they may need to learn or strengthen for a particular opportunity.
-
----
-
-### 4. Semantic Job Matching
-
-The system uses **Gemini Embeddings** to measure semantic similarity between:
-
-- Candidate profile information
-- Job descriptions
-
-This allows the system to capture relevant relationships beyond exact keyword matching.
-
----
-
-### 5. AI Resume Tailoring
-
-Candidates can tailor their resume content for a specific job.
-
-The system:
-
-1. Retrieves the candidate's current profile.
-2. Analyzes the selected job description.
-3. Calculates deterministic skill alignment.
-4. Uses Gemini to rewrite relevant resume sections.
-5. Produces a tailored professional summary and experience content.
-6. Provides tailoring notes.
-
-The system is designed to avoid inventing qualifications or experience that are not present in the candidate profile.
-
----
-
-### 6. AI Resume Generator
-
-The repository also contains a standalone **Streamlit-based AI Resume Generator**.
-
-It supports:
-
-- Personal information
-- Education
-- Skills
-- Experience
-- Projects
-- Achievements and certifications
-- AI-generated professional summary
-- AI-enhanced experience descriptions
-- HTML resume rendering
-- PDF generation
-- Downloadable resume output
-
-The generated resume uses a structured professional template.
-
----
-
-### 7. Candidate Profile Management
-
-The platform allows candidates to maintain structured profile information including:
-
-- Name
-- Education
-- Experience
-- Target roles
-- Preferred locations
-- Skills
-- Graduation year
-- Work type
-- Preferred companies
-
-This profile is used as the basis for personalized recommendations.
-
----
-
-### 8. Recommendation Evaluation
-
-The project includes an evaluation module for measuring ranking quality using:
-
-- Precision@K
-- Recall@K
-- NDCG@K
-
-The evaluation framework is designed to compare recommendation quality using labeled job relevance data.
-
----
-
-## 🏗️ System Architecture
-
-```text
-                    ┌─────────────────────┐
-                    │   Candidate Profile │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Job Data / Jobs   │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Job Normalizer    │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Gemini Job Parser │
-                    │ Skills / Experience │
-                    │ Education Analysis  │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-              ┌─────────────────────────────────┐
-              │      Hybrid Matching Engine     │
-              │                                 │
-              │ • Skill Compatibility           │
-              │ • Semantic Similarity           │
-              │ • Experience Compatibility     │
-              │ • Location Compatibility       │
-              │ • Company / Other Signals      │
-              └────────────────┬────────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Ranked Job List   │
-                    └──────────┬──────────┘
-                               │
-                ┌──────────────┼──────────────┐
-                ▼              ▼              ▼
-        ┌────────────┐ ┌─────────────┐ ┌──────────────┐
-        │ Match Score│ │ Skill Gaps  │ │ Job Details  │
-        └────────────┘ └─────────────┘ └──────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Resume Tailoring  │
-                    │      with Gemini    │
-                    └─────────────────────┘
-Recommendation Pipeline
-Candidate Profile
-        │
-        ▼
-Profile Normalization
-        │
-        ▼
 Job Description
-        │
-        ▼
-AI Job Parsing
-        │
-        ├── Required Skills
-        ├── Preferred Skills
-        ├── Experience
-        └── Education
-        │
-        ▼
-Feature Matching
-        │
-        ├── Skill Match
-        ├── Semantic Match
-        ├── Experience Match
-        ├── Location Match
-        └── Other Signals
-        │
-        ▼
-Hybrid Score
-        │
-        ▼
-Ranked Recommendations
-        │
-        ├── Matched Skills
-        └── Skill Gaps
+      ↓
+JD Analysis
+      ↓
+Skill Alignment
+      ↓
+Gemini Resume Tailoring
+      ↓
+Tailored Summary
+      +
+Tailored Experience
+      +
+ATS Analysis
+```
 
-🧠 Matching Methodology
+The tailoring prompt explicitly instructs the model not to fabricate:
 
-The recommendation score is calculated using a weighted hybrid approach:
+- Companies
+- Projects
+- Technologies
+- Responsibilities
+- Achievements
+- Metrics
+- Certifications
+- Missing skills
 
-Final Score =
-    0.35 × Skill Score
-  + 0.30 × Semantic Score
-  + 0.20 × Experience Score
-  + 0.10 × Location Score
-  + 0.05 × Other Score
-Skill Compatibility
+The system therefore focuses on rewriting and emphasizing information that is already supported by the candidate's profile.
 
-Skill compatibility compares candidate skills against the required and preferred skills extracted from the job description.
+---
 
-Required skills have greater importance than preferred skills.
+## Tech Stack
 
-Semantic Similarity
+### Backend
 
-Gemini Embeddings are used to calculate semantic similarity between candidate information and the job description.
-
-Experience Compatibility
-
-The system considers the experience requirements of the job against the candidate's profile.
-
-Location Compatibility
-
-Candidate location preferences are compared against the job's available locations.
-
-Explainability
-
-Instead of returning only a numerical score, the platform provides interpretable information such as:
-
-Overall Match: 68%
-
-Skill Match: 40%
-Semantic Match: 97%
-Location Match: 100%
-
-Matched Skills:
 - Python
-- C++
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- Pydantic
+- Gemini API
+- Adzuna API
 
-Skill Gaps:
-- Git
-- REST APIs
-- SQL
-🛠️ Tech Stack
-Frontend
-React.js
-React Router
-Vite
-JavaScript
-HTML
-CSS
-Backend
-Python
-FastAPI
-SQLAlchemy
-Pydantic
-Uvicorn
-Database
-PostgreSQL
-AI / Machine Learning
-Google Gemini API
-Gemini Embeddings
-Gemini-based structured job analysis
-AI-powered resume tailoring
-Semantic similarity
-Scikit-learn for recommendation evaluation
-Resume Generation
-Streamlit
-Jinja2
-pdfkit
-wkhtmltopdf
-Development Tools
-Git
-GitHub
-VS Code
-Postman
-Swagger / OpenAPI
-📁 Project Structure
+### Frontend
+
+- React
+- React Router
+- Vite
+- JavaScript
+
+### Resume Generator
+
+A separate Streamlit-based resume generator is included with:
+
+- Streamlit
+- Gemini
+- Jinja2
+- HTML/CSS resume template
+- pdfkit / wkhtmltopdf
+
+### Evaluation
+
+- Precision@K
+- Recall@K
+- NDCG@K
+- scikit-learn
+
+---
+
+## Project Structure
+
+```text
 AI-Job-Intelligence/
 │
 ├── backend/
@@ -776,297 +234,373 @@ AI-Job-Intelligence/
 │   │   ├── models.py
 │   │   └── schemas.py
 │   │
-│   ├── requirements.txt
-│   └── .gitignore
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── FilterBar.jsx
-│   │   │   ├── JobCard.jsx
-│   │   │   ├── MatchScore.jsx
-│   │   │   ├── Navbar.jsx
-│   │   │   └── SkillTags.jsx
-│   │   │
-│   │   ├── pages/
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── JobDetails.jsx
-│   │   │   └── Profile.jsx
-│   │   │
-│   │   ├── services/
-│   │   │   └── api.js
-│   │   │
-│   │   ├── App.jsx
-│   │   ├── App.css
-│   │   ├── index.css
-│   │   └── main.jsx
-│   │
-│   ├── package.json
-│   └── vite.config.js
-│
-├── resume-generator/
-│   ├── prompts/
-│   ├── templates/
-│   │   └── resume_template.html
-│   ├── app.py
-│   ├── chains.py
 │   └── requirements.txt
 │
-├── .gitignore
-└── README.md
-⚙️ Getting Started
-Prerequisites
+├── frontend/
+│   └── src/
+│       ├── components/
+│       │   ├── FilterBar.jsx
+│       │   ├── JobCard.jsx
+│       │   └── Navbar.jsx
+│       │
+│       ├── pages/
+│       │   ├── Dashboard.jsx
+│       │   ├── JobDetails.jsx
+│       │   └── Profile.jsx
+│       │
+│       ├── services/
+│       │   └── api.js
+│       │
+│       └── App.jsx
+│
+└── resume-generator/
+    ├── app.py
+    ├── chains.py
+    └── templates/
+```
 
-Make sure the following are installed:
+---
 
-Python 3.10+
-Node.js
-npm
+## API Endpoints
+
+### Health
+
+```text
+GET /
+GET /health
+```
+
+### Jobs
+
+```text
+POST /jobs
+GET  /jobs
+GET  /jobs/{job_id}
+GET  /jobs/matches
+POST /jobs/ingest
+```
+
+### Candidate Profile
+
+```text
+POST /profile
+GET  /profile/{profile_id}
+PUT  /profile/{profile_id}
+```
+
+### Resume Tailoring
+
+```text
+POST /resume/tailor
+```
+
+---
+
+## Matching Example
+
+A candidate profile might contain:
+
+```text
+Roles:
+Software Engineer Intern
+
+Skills:
+Python, Go, PostgreSQL, Docker
+
+Locations:
+Bangalore, Delhi NCR
+
+Preferred Companies:
+Google, Microsoft
+```
+
+A job is then evaluated across multiple dimensions rather than using a single keyword check.
+
+Example output:
+
+```text
+Overall Match: 82%
+
+Skill Match:        91%
+Text Similarity:    76%
+Experience Match:  100%
+Location Match:    100%
+Company Match:       0%
+
+Matched Skills:
+Python
 PostgreSQL
-Git
+Docker
 
-You will also need a Google Gemini API key.
+Potential Gaps:
+Kubernetes
+```
 
-1. Clone the Repository
-git clone https://github.com/DyutiSaini/AI-Job-Intelligence.git
-cd AI-Job-Intelligence
-🔧 Backend Setup
+---
 
-Navigate to the backend:
+## Setup
 
-cd backend
+### Prerequisites
 
-Create and activate a virtual environment.
+Install:
 
-Windows
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+- Python 3.11+
+- Node.js
+- PostgreSQL
+- A Gemini API key
+- An Adzuna API account and credentials
 
-Install dependencies:
-
-pip install -r requirements.txt
-Environment Variables
-
-Create:
-
-backend/.env
-
-Add your local configuration:
-
-DATABASE_URL=your_postgresql_connection_string
-ADZUNA_APP_ID=your_adzuna_app_id
-ADZUNA_APP_KEY=your_adzuna_app_key
-GEMINI_API_KEY=your_gemini_api_key
-
-Never commit .env files or API keys to GitHub.
-
-PostgreSQL Setup
-
-Create a PostgreSQL database:
-
-CREATE DATABASE ai_job_intelligence;
-
-Update the DATABASE_URL in your .env file according to your local PostgreSQL configuration.
-
-Run the Backend
-
-From the backend directory:
-
-python -m uvicorn app.main:app --reload
-
-The API will be available at:
-
-http://127.0.0.1:8000
-
-Swagger API documentation:
-
-http://127.0.0.1:8000/docs
-🎨 Frontend Setup
-
-Open another terminal and navigate to:
-
-cd frontend
-
-Install dependencies:
-
-npm install
-
-Start the development server:
-
-npm run dev
-
-The frontend will typically be available at:
-
-http://localhost:5173
-📄 Resume Generator Setup
-
-Navigate to:
-
-cd resume-generator
+### Backend
 
 Create a virtual environment:
 
+```bash
+cd backend
+
 python -m venv venv
-.\venv\Scripts\Activate.ps1
+```
+
+Activate it:
+
+**Windows**
+
+```bash
+venv\Scripts\activate
+```
+
+**Linux/macOS**
+
+```bash
+source venv/bin/activate
+```
 
 Install dependencies:
 
+```bash
 pip install -r requirements.txt
+```
 
-Create:
+Create a `.env` file inside `backend/`:
 
-resume-generator/.env
+```env
+DATABASE_URL=postgresql+psycopg2://USERNAME:PASSWORD@localhost:5432/DATABASE_NAME
 
-Add:
+ADZUNA_APP_ID=your_adzuna_app_id
+ADZUNA_APP_KEY=your_adzuna_app_key
 
 GEMINI_API_KEY=your_gemini_api_key
+```
 
-Run the Streamlit application:
+Start the backend:
 
-streamlit run app.py
+```bash
+uvicorn app.main:app --reload
+```
 
-The Resume Generator will open in the browser.
+The API will be available at:
 
-🔌 API Overview
+```text
+http://127.0.0.1:8000
+```
 
-The backend exposes REST APIs for the major platform functionality.
+FastAPI's interactive API documentation is available at:
 
-Method	Endpoint	Purpose
-GET	/	API root
-GET	/health	Health check
-POST	/jobs	Create a job
-GET	/jobs	Retrieve jobs
-GET	/jobs/matches	Get personalized job recommendations
-GET	/jobs/{job_id}	Get job details
-POST	/jobs/ingest	Ingest jobs
-POST	/profile	Create candidate profile
-GET	/profile/{profile_id}	Retrieve candidate profile
-PUT	/profile/{profile_id}	Update candidate profile
-POST	/resume/tailor	Generate tailored resume content
-
-Interactive API documentation is available through FastAPI Swagger at:
-
+```text
 http://127.0.0.1:8000/docs
-🔐 Security
+```
 
-The project follows basic security practices for local development:
+### Frontend
 
-API keys are stored in .env files.
-.env files are excluded from Git.
-Virtual environments are excluded from Git.
-Generated and cache files are excluded from Git.
-Sensitive credentials are not stored in source code.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-Before production deployment, additional security measures such as authentication, authorization, secret management, rate limiting, and production-grade configuration should be implemented.
+The frontend runs through Vite.
 
-📊 Evaluation
+Make sure the backend is running before using the dashboard.
 
-The project includes an evaluation framework for recommendation ranking.
+---
 
-Implemented metrics:
+## Job Ingestion
 
-Precision@K
-Recall@K
-NDCG@K
+Jobs can be ingested through the backend endpoint.
 
-The evaluation module is located at:
+Example:
 
-backend/app/evaluation/
+```text
+POST /jobs/ingest?what=software%20engineer%20intern&where=Bangalore&results_per_page=10
+```
 
-The evaluation dataset contains manually assigned relevance labels for the available job examples.
+The pipeline:
 
-Because the current evaluation dataset is relatively small, the metrics should be treated as an initial benchmark rather than a production-level evaluation.
+1. Fetches jobs from Adzuna
+2. Normalizes the raw response
+3. Sends job descriptions to Gemini
+4. Extracts structured job information
+5. Checks for existing jobs
+6. Inserts new jobs or updates existing jobs
+7. Stores the result in PostgreSQL
 
-💡 Design Principles
-Deterministic Scoring
+---
 
-The final recommendation score is calculated programmatically rather than allowing an LLM to directly decide the ranking.
+## Recommendation Evaluation
 
-Explainability
+The repository includes an experimental evaluation pipeline for comparing:
 
-Recommendations expose the underlying matching signals and skill gaps.
+- Skill-based matching
+- Text-similarity matching
+- Hybrid matching
 
-Structured AI Output
+The evaluation calculates:
 
-Gemini is used to transform unstructured job descriptions into structured information that can be processed by the backend.
+```text
+Precision@5
+Recall@5
+NDCG@5
+```
 
-No Qualification Fabrication
+The current relevance labels are manually defined for the evaluation dataset. They are intended for experimentation rather than representing a large production benchmark.
 
-Resume tailoring is designed to improve wording and relevance without inventing skills, experience, or qualifications.
+---
 
-Modular Architecture
+## Standalone Resume Generator
 
-Job ingestion, normalization, parsing, matching, storage, evaluation, and resume tailoring are separated into dedicated backend services.
+The `resume-generator/` directory contains a separate Streamlit application for generating a complete PDF resume.
 
-📌 Current Status
+It supports:
 
-The following functionality is currently implemented:
+- Personal information
+- Education
+- Technical skills
+- Up to two experience entries
+- Up to three projects
+- Achievements and certifications
+- AI-generated professional summary
+- AI-assisted experience rewriting
+- HTML resume preview
+- PDF generation
 
- Candidate profile management
- Job ingestion
- Job normalization
- AI-powered job parsing
- PostgreSQL job storage
- Hybrid job matching
- Gemini-based semantic similarity
- Skill compatibility scoring
- Experience compatibility
- Location compatibility
- Explainable match scores
- Matched-skill identification
- Skill-gap detection
- AI resume tailoring
- Standalone AI Resume Generator
- PDF resume generation
- Recommendation evaluation framework
- React dashboard
- Job details page
- Candidate profile page
- FastAPI Swagger documentation
-🔮 Future Improvements
+Run it with:
 
-Potential future enhancements include:
+```bash
+cd resume-generator
+streamlit run app.py
+```
 
-Embedding caching to reduce repeated API calls
-Additional job data sources
-Automated job alerts
-Email notifications
-Saved jobs and application tracking
-User authentication and authorization
-Recommendation feedback loops
-Larger labeled evaluation datasets
-Production deployment
-More advanced personalization
-Background job processing
-Production-grade monitoring and logging
-🎯 Why This Project?
+The PDF generation component currently depends on a local `wkhtmltopdf` installation.
 
-AI Job Intelligence was designed as an end-to-end demonstration of how AI, information retrieval, recommendation systems, backend engineering, databases, and modern frontend development can be combined into a practical application.
+---
 
-Rather than relying only on keyword matching or an LLM-generated recommendation, the platform combines:
+## Current Limitations
 
-Structured Job Analysis
-        +
-Skill Matching
-        +
-Semantic Similarity
-        +
-Experience Matching
-        +
-Location Matching
-        +
-Explainability
-        +
-AI Resume Tailoring
+The current implementation does **not** include:
 
-This creates a more transparent workflow for understanding why a particular job is relevant to a candidate.
+- User authentication
+- Multi-user account management
+- Automated scheduled job ingestion
+- Multiple job-board integrations
+- Email notifications
+- Automatic job applications
+- Application status tracking
+- Referral discovery
+- Referral outreach
+- Gmail integration
+- Automated follow-ups
+- Browser-based application automation
+- Fully autonomous multi-agent orchestration
 
-👩‍💻 Author
+The recommendation similarity component currently uses local token-based text similarity rather than a production embedding/vector-search architecture.
 
-Dyuti Saini
+---
 
-B.Tech — Computer Science Engineering (Artificial Intelligence)
-Indira Gandhi Delhi Technical University for Women (IGDTUW)
+## Roadmap
 
-GitHub:
-https://github.com/DyutiSaini
+The project can be extended toward a complete AI job-search agent.
+
+### Phase 1 — Job Intelligence
+
+- [x] Job ingestion
+- [x] Job normalization
+- [x] JD parsing
+- [x] Candidate profiles
+- [x] Job matching
+- [x] Recommendation ranking
+- [x] Match explanations
+- [x] Resume tailoring
+
+### Phase 2 — Job Discovery Infrastructure
+
+- [ ] Scheduled ingestion
+- [ ] Multiple job sources
+- [ ] Deduplication across sources
+- [ ] Better job freshness handling
+- [ ] Embedding-based retrieval
+- [ ] Improved ranking evaluation
+
+### Phase 3 — Candidate Workflow
+
+- [ ] Application database
+- [ ] Application status tracking
+- [ ] Saved jobs
+- [ ] Application history
+- [ ] Email notifications
+- [ ] Personalized job digests
+
+### Phase 4 — Agentic Job Application
+
+- [ ] Application agent
+- [ ] Resume selection/tailoring agent
+- [ ] Referral discovery
+- [ ] Referral message generation
+- [ ] Application form assistance
+- [ ] Follow-up agent
+- [ ] Human approval before external actions
+
+---
+
+## Design Principles
+
+### 1. Don't fabricate candidate information
+
+AI-generated resume content should only be derived from information supplied by the candidate.
+
+### 2. Explain recommendations
+
+A recommendation should provide enough information for a candidate to understand the underlying match.
+
+### 3. Separate deterministic scoring from generative AI
+
+Where possible:
+
+- AI handles extraction and language generation.
+- Deterministic code handles scoring, filtering, and structured business logic.
+
+### 4. Keep external actions controllable
+
+Future automation such as applications and emails should support explicit candidate approval before taking consequential external actions.
+
+---
+
+## Status
+
+**Current stage:** Functional prototype / MVP
+
+The implemented system already covers the core **job intelligence pipeline**:
+
+```text
+Discover
+   ↓
+Parse
+   ↓
+Match
+   ↓
+Rank
+   ↓
+Explain
+   ↓
+Tailor Resume
+```
+
+The next major step is extending this foundation into an end-to-end job-search workflow with applications, referrals, notifications, and application tracking.
